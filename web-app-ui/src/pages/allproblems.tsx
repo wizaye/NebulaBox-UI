@@ -15,11 +15,30 @@ import {
 import { SearchIcon } from "@/components/icons";
 import { NavLink } from "react-router-dom";
 
-function extractDifficulty(problem) {
+// Define a TypeScript interface for a problem
+interface Problem {
+  id: string;
+  title: string;
+  difficulty?: string;
+  description: string;
+  solutions: Record<string, unknown>; // Adjust based on your actual solution structure
+  date: string;
+}
+
+interface FormattedProblem {
+  id: string;
+  title: string;
+  difficulty: string;
+  description: string;
+  solutions: Record<string, unknown>;
+  date: string;
+}
+
+function extractDifficulty(problem: Problem): string {
   return problem.difficulty || "Unknown";
 }
 
-function formatProblems(data) {
+function formatProblems(data: Problem[]): FormattedProblem[] {
   return data.map((problem) => ({
     id: problem.id,
     title: problem.title,
@@ -38,13 +57,13 @@ const difficultyColors = {
 };
 
 export default function AllProblemsPage() {
-  const [problems, setProblems] = useState([]);
+  const [problems, setProblems] = useState<FormattedProblem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortOrder, setSortOrder] = useState("asc");
-  const [sortField, setSortField] = useState("title");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(1);
-  const [activeTab, setActiveTab] = useState("all");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortField, setSortField] = useState<"title" | "difficulty" | "date">("title");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [page, setPage] = useState<number>(1);
+  const [activeTab, setActiveTab] = useState<"all" | "easy" | "medium" | "hard">("all");
   const rowsPerPage = 8; // Number of problems per page
 
   useEffect(() => {
@@ -54,7 +73,7 @@ export default function AllProblemsPage() {
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }
-        const data = await response.json();
+        const data: Problem[] = await response.json();
         const formattedProblems = formatProblems(data);
         setProblems(formattedProblems);
       } catch (error) {
@@ -67,7 +86,7 @@ export default function AllProblemsPage() {
     loadProblems();
   }, []);
 
-  const handleSort = (field) => {
+  const handleSort = (field: "title" | "difficulty" | "date") => {
     const sortedProblems = [...problems].sort((a, b) => {
       const valueA = field === "title" ? a.title.toLowerCase() : a[field];
       const valueB = field === "title" ? b.title.toLowerCase() : b[field];
@@ -81,7 +100,7 @@ export default function AllProblemsPage() {
     setProblems(sortedProblems);
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setPage(1); // Reset to first page on new search
   };
@@ -90,7 +109,7 @@ export default function AllProblemsPage() {
     problem.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const paginatedProblems = (filteredProblems) => {
+  const paginatedProblems = (filteredProblems: FormattedProblem[]) => {
     return filteredProblems.slice((page - 1) * rowsPerPage, page * rowsPerPage);
   };
 
@@ -117,8 +136,8 @@ export default function AllProblemsPage() {
     );
   }
 
-  const renderProblemTable = (problemList) => (
-    <Table aria-label="Problems" bordered>
+  const renderProblemTable = (problemList: FormattedProblem[]) => (
+    <Table aria-label="Problems">
       <TableHeader>
         <TableColumn onClick={() => handleSort("title")}>
           Title {sortField === "title" && (sortOrder === "asc" ? "↑" : "↓")}
@@ -135,7 +154,7 @@ export default function AllProblemsPage() {
         {problemList.map((problem) => (
           <TableRow key={problem.id}>
             <TableCell>{problem.title}</TableCell>
-            <TableCell className={difficultyColors[problem.difficulty]}>
+            <TableCell className={difficultyColors[problem.difficulty as keyof typeof difficultyColors]}>
               {problem.difficulty}
             </TableCell>
             <TableCell>{problem.date}</TableCell>
@@ -175,8 +194,8 @@ export default function AllProblemsPage() {
             aria-label="Problem Difficulty"
             className="flex flex-col"
             variant="underlined"
-            selectedValue={activeTab}
-            onSelectionChange={setActiveTab}
+            selectedKey={activeTab}
+            onSelectionChange={(key) => setActiveTab(key as "all" | "easy" | "medium" | "hard")}
           >
             <Tab key="all" title="All">
               {renderProblemTable(currentProblems.all)}
