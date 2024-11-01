@@ -50,7 +50,7 @@ export default function AllProblemsPage() {
   useEffect(() => {
     async function loadProblems() {
       try {
-        const response = await fetch("http://localhost:3000/problems");
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/problems`);
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }

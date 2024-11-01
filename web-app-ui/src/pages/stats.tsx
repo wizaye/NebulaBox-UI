@@ -15,7 +15,7 @@ const StatsPage: React.FC = () => {
   useEffect(() => {
     const fetchProblemsData = async () => {
       try {
-        const response = await fetch("http://localhost:3000/problems"); // Adjust the URL as needed
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/problems`); // Adjust the URL as needed
         if (!response.ok) {
           throw new Error("Failed to fetch data");
         }

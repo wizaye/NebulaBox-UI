@@ -38,7 +38,7 @@ export default function ProblemPage() {
       }
 
       try {
-        const response = await fetch(`http://localhost:3000/problems/${problemId}`);
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/problems/${problemId}`);
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }
