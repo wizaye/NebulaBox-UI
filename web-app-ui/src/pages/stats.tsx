@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import DefaultLayout from "@/layouts/default";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { Spinner } from "@nextui-org/react"; // Import the Spinner component
+import CodeHighlighter from "./displaycode";
 
 interface Stats {
   solved: number;
@@ -73,6 +74,8 @@ const StatsPage: React.FC = () => {
           <Tooltip />
           <Legend />
         </PieChart>
+        <CodeHighlighter />
+
       </section>
     </DefaultLayout>
   );

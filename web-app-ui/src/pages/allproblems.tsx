@@ -114,7 +114,7 @@ export default function AllProblemsPage() {
   };
 
   const searchInput = (
-    <div className="mb-4">
+    <div className="mb-4 max-w-fit">
       <Input
         aria-label="Search"
         classNames={{ inputWrapper: "bg-default-100", input: "text-sm" }}
@@ -124,6 +124,7 @@ export default function AllProblemsPage() {
         startContent={<SearchIcon className="text-base text-default-400 pointer-events-none flex-shrink-0" />}
         type="search"
         onChange={handleSearch}
+        fullWidth
       />
     </div>
   );
@@ -167,7 +168,6 @@ export default function AllProblemsPage() {
     </Table>
   );
 
-  // Calculate pages for each difficulty level
   const totalPagesAll = Math.ceil(filteredProblems.length / rowsPerPage);
   const totalPagesEasy = Math.ceil(filteredProblems.filter(problem => problem.difficulty === "Easy").length / rowsPerPage);
   const totalPagesMedium = Math.ceil(filteredProblems.filter(problem => problem.difficulty === "Medium").length / rowsPerPage);
@@ -182,21 +182,25 @@ export default function AllProblemsPage() {
 
   return (
     <DefaultLayout>
-      <section className="flex flex-col items-start justify-center gap-4 py-8 md:py-10">
+      <section className="container mx-auto px-4 py-6 sm:py-8 lg:py-10"> {/* Center content with padding */}
         <div className="inline-block max-w-lg text-center mb-4">
           <h1 className={title()}>All Problems</h1>
         </div>
         {searchInput}
       </section>
-      <div className="flex w-full">
-        <div className="flex-1">
+      <div className="flex w-full px-4">
+        <div className="w-full">
           <Tabs
             aria-label="Problem Difficulty"
             className="flex flex-col"
             variant="underlined"
             selectedKey={activeTab}
-            onSelectionChange={(key) => setActiveTab(key as "all" | "easy" | "medium" | "hard")}
+            onSelectionChange={(key) => {
+              setActiveTab(key as "all" | "easy" | "medium" | "hard");
+              setPage(1); // Reset page to 1 when switching tabs
+            }}
           >
+
             <Tab key="all" title="All">
               {renderProblemTable(currentProblems.all)}
               {totalPagesAll > 1 && (

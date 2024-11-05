@@ -1,10 +1,15 @@
 import { useParams } from "react-router-dom";
 import DefaultLayout from "@/layouts/default";
-import { Tabs, Tab, Card, CardBody } from "@nextui-org/react";
+import { Tabs, Tab, Card, CardBody, Chip } from "@nextui-org/react";
 import { useEffect, useState } from "react";
-import { Spinner } from "@nextui-org/react"; // Import Spinner
+import { Spinner } from "@nextui-org/react";
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkRehype from 'remark-rehype';
+import rehypeStringify from 'rehype-stringify';
+import rehypePrettyCode from 'rehype-pretty-code';
+import { transformerCopyButton } from '@rehype-pretty/transformers';
 
-// Define types for the fetched problem structure
 interface Solution {
   language: string;
   content: string;
@@ -23,14 +28,14 @@ export default function ProblemPage() {
   const { id } = useParams<{ id: string }>();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [cache, setCache] = useState<Record<number, Problem | null>>({}); // Cache for problems
+  const [cache, setCache] = useState<Record<number, Problem | null>>({});
+  const [processedSolutions, setProcessedSolutions] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       const problemId = parseInt(id || '0');
 
-      // Check if problem data is already cached
       if (cache[problemId]) {
         setProblem(cache[problemId]);
         setLoading(false);
@@ -43,25 +48,74 @@ export default function ProblemPage() {
           throw new Error("Network response was not ok");
         }
         const selectedProblem: Problem = await response.json();
-
-        // Update cache
         setCache((prev) => ({ ...prev, [problemId]: selectedProblem }));
         setProblem(selectedProblem);
       } catch (error) {
         console.error("Error fetching problem data:", error);
-        setProblem(null); // Handle not found case
+        setProblem(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [id]); // Removed cache from dependencies
+  }, [id, cache]);
+
+  useEffect(() => {
+    const processSolutions = async () => {
+      if (problem) {
+        const newProcessedSolutions = new Map();
+
+        for (const solution of problem.solutions) {
+          const processedCode = await renderCode(solution.content, solution.language);
+          newProcessedSolutions.set(solution.language, processedCode);
+        }
+
+        setProcessedSolutions(newProcessedSolutions);
+      }
+    };
+
+    processSolutions();
+  }, [problem]);
+
+  const renderCode = async (content: string, language: string) => {
+    // Normalize the language names
+    switch (language) {
+      case 'Java':
+        language = 'java'; // Update the language to lowercase
+        break;
+      case 'Python':
+        language = 'python'; // Update the language to lowercase
+        break;
+      case 'C++':
+        language = 'cpp'; // Update the language to lowercase
+        break;
+      default:
+        // You can handle additional languages or keep it as is
+        break;
+    }
+
+    const file = await unified()
+      .use(remarkParse)
+      .use(remarkRehype)
+      .use(rehypePrettyCode, {
+        transformers: [
+          transformerCopyButton({
+            visibility: 'always',
+            feedbackDuration: 3_000,
+          }),
+        ],
+      })
+      .use(rehypeStringify)
+      .process(`\`\`\`${language}\n${content}\n\`\`\``); // Ensure language is correctly formatted here
+
+    return String(file);
+  };
 
   if (loading) return (
     <DefaultLayout>
-      <section className="p-8 flex justify-center items-center h-screen">
-        <Spinner size="lg" /> {/* Use the Next UI Spinner component */}
+      <section className="p-4 flex justify-center items-center h-screen">
+        <Spinner size="lg" />
       </section>
     </DefaultLayout>
   );
@@ -74,41 +128,57 @@ export default function ProblemPage() {
     return acc;
   }, {} as Record<string, Solution[]>);
 
+  // Function to determine badge color based on difficulty
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty.toLowerCase()) {
+      case "easy":
+        return "success";
+      case "medium":
+        return "warning";
+      case "hard":
+        return "danger";
+      default:
+        return "default";
+    }
+  };
+
   return (
     <DefaultLayout>
-      <section className="p-8">
-        <h1 className="text-3xl font-bold">{problem.title}</h1>
-        <p className="text-gray-600 mb-4">Difficulty: {problem.difficulty}</p>
+      <section className="p-3 sm:p-4 md:p-8">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">{problem.title}</h1>
+        
+        {/* Difficulty badge */}
+        <Chip color={getDifficultyColor(problem.difficulty)} variant="flat" className="mb-2 sm:mb-4 text-sm sm:text-base">
+          {problem.difficulty}
+        </Chip>
 
-        <Tabs aria-label="Problem Details">
-          {/* Description Tab */}
+        <Tabs aria-label="Problem Details" className="w-full overflow-x-auto">
           <Tab key="description" title="Description">
-            <Card>
+            <Card className="my-2 md:my-4 shadow-md">
               <CardBody>
-                <div dangerouslySetInnerHTML={{ __html: problem.description }} />
+                <div className="text-sm sm:text-base" dangerouslySetInnerHTML={{ __html: problem.description }} />
               </CardBody>
             </Card>
           </Tab>
 
-          {/* Solutions Tab */}
           <Tab key="solutions" title="Solutions">
-            <Tabs aria-label="Languages">
+            <Tabs aria-label="Languages" className="w-full overflow-x-auto">
               {Object.entries(groupedSolutions).map(([language, solutions]) => (
                 <Tab key={language} title={language}>
-                  <Card>
-                    <CardBody>
-                      {solutions.map((solution, index) => (
-                        <div key={index} className="mb-4">
-                          <h3 className="font-semibold">Solution {index + 1}</h3>
-                          <div className="p-2 border rounded-md">
-                            <pre className="whitespace-pre-wrap overflow-auto text-sm">
-                              {solution.content}
-                            </pre>
+                  {solutions.map((solution, index) => (
+                    <Card key={index} className="my-2 md:my-4 shadow-md">
+                      <CardBody>
+                        <div className="mb-4">
+                          <h3 className="font-semibold text-base sm:text-lg md:text-xl mt-2 mb-2">
+                            Solution {index + 1} :
+                          </h3>
+                          <div className="p-1 border rounded-sm overflow-auto max-h-64">
+                            <div className="overflow-auto whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: processedSolutions.get(solution.language) || '' }} />
                           </div>
                         </div>
-                      ))}
-                    </CardBody>
-                  </Card>
+                      </CardBody>
+                    </Card>
+                  ))}
                 </Tab>
               ))}
             </Tabs>
