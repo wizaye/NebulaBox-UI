@@ -1,12 +1,12 @@
 // api/cron.js
-import { storeProblems } from '../storeProblems.js'; // Adjust the path as necessary
+import { storeProblems } from '../utils/storeproblems.js'; // Adjust the path as necessary
 import { config } from 'dotenv';
 
 config();
 
 export default async function handler(req, res) {
   // Check the Authorization header for security
-  if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (req.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).end('Unauthorized');
   }
 

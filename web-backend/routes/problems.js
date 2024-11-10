@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
-import { storeProblems } from '../utils/storeproblems.js';
 
 config();
 const router = Router();
